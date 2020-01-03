@@ -243,7 +243,6 @@ import com.android.systemui.statusbar.policy.ConfigurationController.Configurati
 import com.android.systemui.statusbar.policy.DeviceProvisionedController;
 import com.android.systemui.statusbar.policy.DeviceProvisionedController.DeviceProvisionedListener;
 import com.android.systemui.statusbar.policy.ExtensionController;
-import com.android.systemui.statusbar.policy.FlashlightController;
 import com.android.systemui.statusbar.policy.HeadsUpManager;
 import com.android.systemui.statusbar.policy.KeyguardMonitor;
 import com.android.systemui.statusbar.policy.KeyguardUserSwitcher;
@@ -638,7 +637,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         }
     };
 
-    private FlashlightController mFlashlightController;
     private KeyguardUserSwitcher mKeyguardUserSwitcher;
     protected UserSwitcherController mUserSwitcherController;
     protected NetworkController mNetworkController;
@@ -1142,8 +1140,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
 
         // Private API call to make the shadows look better for Recents
         ThreadedRenderer.overrideProperty("ambientRatio", String.valueOf(1.5f));
-
-        mFlashlightController = Dependency.get(FlashlightController.class);
 
         mMinBrightness = pm.getMinimumScreenBrightnessSetting();
         mMaxBrightness = pm.getMaximumScreenBrightnessSetting();
@@ -2074,28 +2070,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
 
     @Override
     public void toggleCameraFlash() {
-        if (DEBUG) {
-            Log.d(TAG, "Toggling camera flashlight");
-        }
-        if (mFlashlightController != null) {
-            mFlashlightController.initFlashLight();
-            if (mFlashlightController.hasFlashlight() && mFlashlightController.isAvailable()) {
-                mFlashlightController.setFlashlight(!mFlashlightController.isEnabled());
-            }
-        }
-    }
-
-    @Override
-    public void toggleCameraFlashState(boolean enable) {
-        if (DEBUG) {
-            Log.d(TAG, "Disabling camera flashlight");
-        }
-        if (mFlashlightController != null) {
-            mFlashlightController.initFlashLight();
-            if (mFlashlightController.hasFlashlight() && mFlashlightController.isAvailable()) {
-                mFlashlightController.setFlashlight(enable);
-            }
-        }
+        mDozeServiceHost.toggleCameraFlash();
     }
 
     void makeExpandedVisible(boolean force) {
@@ -2772,10 +2747,6 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         pw.println("SharedPreferences:");
         for (Map.Entry<String, ?> entry : Prefs.getAll(mContext).entrySet()) {
             pw.print("  "); pw.print(entry.getKey()); pw.print("="); pw.println(entry.getValue());
-        }
-
-        if (mFlashlightController != null) {
-            mFlashlightController.dump(fd, pw, args);
         }
     }
 
@@ -4601,6 +4572,12 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
 
         public boolean shouldAnimateScreenOff() {
             return mAnimateScreenOff;
+        }
+
+        public void toggleCameraFlash() {
+            for (Callback callback : mCallbacks) {
+                callback.toggleCameraFlash();
+            }
         }
     }
 
